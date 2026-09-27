@@ -8,6 +8,9 @@ require('dotenv').config();
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
 
+// Bring in the security lock
+const verifyAdmin = require('./middleware/adminAuth');
+
 // Configure Cloudinary securely using your .env variables
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -58,14 +61,7 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(async () => {
     console.log('✅ MongoDB Connected Successfully');
-    
-    // Auto-create default admin
-    const adminExists = await Admin.findOne({ email: 'admin@aqbeauty.com' });
-    if (!adminExists) {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
-      await Admin.create({ email: 'admin@aqbeauty.com', password: hashedPassword });
-      console.log('🔐 Default Admin created (admin@aqbeauty.com / admin123)');
-    }
+    // Auto-create code removed for security
   })
   .catch((err) => {
     console.error('❌ CRITICAL MongoDB Connection Error:', err.message);
@@ -153,7 +149,7 @@ app.get('/api/products/:id', async (req, res) => {
   }
 });
 
-app.post('/api/products', async (req, res) => {
+app.post('/api/products', verifyAdmin, async (req, res) => {
   try {
     const newProduct = new Product(req.body);
     const savedProduct = await newProduct.save();
@@ -164,7 +160,7 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
-app.put('/api/products/:id', async (req, res) => {
+app.put('/api/products/:id', verifyAdmin, async (req, res) => {
   try {
     const updatedProduct = await Product.findByIdAndUpdate(
       req.params.id,
@@ -179,7 +175,7 @@ app.put('/api/products/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/products/:id', async (req, res) => {
+app.delete('/api/products/:id', verifyAdmin, async (req, res) => {
   try {
     const deletedProduct = await Product.findByIdAndDelete(req.params.id);
     if (!deletedProduct) return res.status(404).json({ error: 'Product not found' });
@@ -191,7 +187,7 @@ app.delete('/api/products/:id', async (req, res) => {
 });
 
 // POST: Upload Image to Cloudinary
-app.post('/api/upload', upload.single('image'), async (req, res) => {
+app.post('/api/upload', verifyAdmin, upload.single('image'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No image file provided' });
@@ -212,7 +208,7 @@ app.post('/api/upload', upload.single('image'), async (req, res) => {
 });
 
 // Update Product Stock (Admin Inventory)
-app.put('/api/products/:id/stock', async (req, res) => {
+app.put('/api/products/:id/stock', verifyAdmin, async (req, res) => {
   try {
     const { stock } = req.body;
     const updatedProduct = await Product.findByIdAndUpdate(
@@ -269,7 +265,7 @@ app.put('/api/orders/:id/cancel', async (req, res) => {
   }
 });
 
-app.get('/api/orders', async (req, res) => {
+app.get('/api/orders', verifyAdmin, async (req, res) => {
   try {
     const orders = await Order.find({}).sort({ createdAt: -1 });
     res.json(orders);
@@ -290,7 +286,7 @@ app.get('/api/orders/my-orders/:userId', async (req, res) => {
   }
 });
 
-app.put('/api/orders/:id/status', async (req, res) => {
+app.put('/api/orders/:id/status', verifyAdmin, async (req, res) => {
   try {
     const { status } = req.body;
     const updatedOrder = await Order.findByIdAndUpdate(

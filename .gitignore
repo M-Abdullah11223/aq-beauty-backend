@@ -1,3 +1,8 @@
 node_modules/
 .env
-.DS_Storedocker-desktop-amd64.deb
+.env.local
+.DS_Store
+docker-desktop-amd64.deb
+npm-debug.log*
+dist/
+build/

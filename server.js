@@ -1,7 +1,7 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const helmet = require('helmet'); // 🔥 NEW: Security Headers
+const helmet = require('helmet'); // 🔥 Security Headers
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
@@ -25,15 +25,27 @@ const Admin = require('./models/Admin');
 
 const app = express();
 
-// 🔥 NEW: Apply Helmet for standard HTTP security headers
+// 🔥 Apply Helmet for standard HTTP security headers
 app.use(helmet());
 
-// 🔥 UPDATED: Secure CORS configuration for local and production
+// 🔥 FIXED & SECURED CORS configuration: supports Vercel live frontend, custom domains, and local testing
+const allowedOrigins = [
+  'http://localhost:3000',
+  'https://aq-beauty-frontend.vercel.app',
+  process.env.FRONTEND_URL,
+  process.env.CORS_ORIGIN
+].filter(Boolean); // Filters out undefined/null if env vars aren't set yet
+
 app.use(cors({
-  origin: [
-    'http://localhost:3000', // Local frontend
-    process.env.FRONTEND_URL // Live Vercel frontend
-  ],
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps, curl, or Postman)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS policy'));
+    }
+  },
   credentials: true
 }));
 
@@ -60,6 +72,11 @@ mongoose.connect(process.env.MONGO_URI, {
     process.exit(1);
   });
 
+// --- HEALTH CHECK ROUTE (Important for Back4App / Render monitoring) ---
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'OK', timestamp: new Date() });
+});
+
 // --- ADMIN AUTH ROUTES ---
 app.post('/api/admin/login', async (req, res) => {
   try {
@@ -83,7 +100,7 @@ app.post('/api/admin/login', async (req, res) => {
   }
 });
 
-// 🔥 NEW: SECURE CUSTOMER AUTHENTICATION SYSTEM
+// 🔥 SECURE CUSTOMER AUTHENTICATION SYSTEM ROUTES
 const authRoutes = require('./routes/auth');
 app.use('/api/auth', authRoutes);
 
@@ -291,5 +308,5 @@ app.put('/api/orders/:id/status', async (req, res) => {
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

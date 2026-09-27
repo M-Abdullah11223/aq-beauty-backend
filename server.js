@@ -31,7 +31,7 @@ const app = express();
 // 🔥 Apply Helmet for standard HTTP security headers
 app.use(helmet());
 
-// 🔥 FIXED & SECURED CORS configuration: supports Vercel live frontend, custom domains, and local testing
+// 🔥 BULLETPROOF CORS configuration: Dynamically allows your Vercel frontend, custom domains, and local testing
 const allowedOrigins = [
   'http://localhost:3000',
   'https://aq-beauty-frontend.vercel.app',
@@ -43,7 +43,13 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps, curl, or Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV !== 'production') {
+    
+    // Dynamically allow any vercel.app deployment URL or localhost
+    if (
+      allowedOrigins.indexOf(origin) !== -1 || 
+      origin.endsWith('.vercel.app') || 
+      process.env.NODE_ENV !== 'production'
+    ) {
       callback(null, true);
     } else {
       callback(new Error('Not allowed by CORS policy'));
@@ -61,7 +67,6 @@ mongoose.connect(process.env.MONGO_URI, {
 })
   .then(async () => {
     console.log('✅ MongoDB Connected Successfully');
-    // Auto-create code removed for security
   })
   .catch((err) => {
     console.error('❌ CRITICAL MongoDB Connection Error:', err.message);

@@ -1,0 +1,41 @@
+[33mcommit f5aa47a1a0ae91e0785192e2fbcd00cb636093af[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Muhammad Abdullah <orakzaiabulapple@gmail.com>
+Date:   Sun Sep 27 22:27:45 2026 +0500
+
+    Fix .gitignore file formatting and remove cached binaries
+
+ .gitignore               |   7 [32m++++++[m[31m-[m
+ docker-desktop-amd64.deb | Bin [31m464771268[m -> [32m0[m bytes
+ 2 files changed, 6 insertions(+), 1 deletion(-)
+
+[33mcommit dc7183c9465ca959a5489eba6525787a90088bdf[m
+Author: Muhammad Abdullah <orakzaiabulapple@gmail.com>
+Date:   Sun Sep 27 22:22:43 2026 +0500
+
+    Fix CORS policy for Vercel frontend
+
+ docker-desktop-amd64.deb | Bin [31m0[m -> [32m464771268[m bytes
+ server.js                |  35 [32m+++++++++++++++++++++++++[m[31m---------[m
+ 2 files changed, 26 insertions(+), 9 deletions(-)
+
+[33mcommit 4935c0e15312523f326d95f383c6ed55569cd859[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: Muhammad Abdullah <orakzaiabulapple@gmail.com>
+Date:   Sun Sep 27 04:09:52 2026 +0500
+
+    feat: initial backend commit with Docker and CI workflow
+
+ .dockerignore                    |    5 [32m+[m
+ .github/workflows/ci.yml         |   22 [32m+[m
+ .gitignore                       |    3 [32m+[m
+ Dockerfile                       |    7 [32m+[m
+ controllers/productController.js |  109 [32m++[m
+ models/Admin.js                  |   15 [32m+[m
+ models/Order.js                  |   28 [32m+[m
+ models/Product.js                |   49 [32m+[m
+ models/User.js                   |   39 [32m+[m
+ package-lock.json                | 1967 [32m+++++++++++++++++++++++++[m
+ package.json                     |   29 [32m+[m
+ routes/auth.js                   |  199 [32m+++[m
+ routes/productRoutes.js          |   28 [32m+[m
+ server.js                        |  295 [32m++++[m
+ 14 files changed, 2795 insertions(+)

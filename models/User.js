@@ -15,7 +15,7 @@ const userSchema = new mongoose.Schema({
   },
   password: { 
     type: String,
-    // Not required because users signing up via Google won't have a password
+    // Not required because users signing up via Google won't have a password..
   },
   googleId: { 
     type: String 

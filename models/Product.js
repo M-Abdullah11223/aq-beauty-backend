@@ -8,9 +8,16 @@ const productSchema = new mongoose.Schema({
     trim: true 
   },
   price: { 
+    // This will now represent the PKR price
     type: Number, 
     required: true,
     min: [0, 'Price cannot be negative'] 
+  },
+  salePrice: {
+    // NEW: Optional field for discounted PKR price
+    type: Number,
+    min: [0, 'Sale price cannot be negative'],
+    default: null
   },
   category: { 
     type: String, 
@@ -43,6 +50,15 @@ const productSchema = new mongoose.Schema({
   }
 }, { 
   timestamps: true 
+});
+
+// Add a pre-save hook to ensure salePrice isn't higher than regular price
+productSchema.pre('save', function(next) {
+  if (this.salePrice && this.salePrice >= this.price) {
+    this.salePrice = null;
+    this.isSale = false;
+  }
+  next();
 });
 
 // 2. Create and Export the Model

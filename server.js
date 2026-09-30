@@ -234,6 +234,25 @@ app.post('/api/orders', async (req, res) => {
   try {
     const { userId, customerName, email, phone, city, address, items, totalAmount, status, paymentMethod } = req.body;
     
+    if (!items || items.length === 0) {
+      return res.status(400).json({ message: 'Order must contain items' });
+    }
+
+    // 🔥 AUTOMATIC STOCK DEDUCTION LOGIC
+    for (const item of items) {
+      const prodId = item.productId || item._id;
+      const orderedQty = Number(item.quantity) || 1;
+
+      if (prodId) {
+        const product = await Product.findById(prodId);
+        if (product) {
+          // Subtract stock, ensuring it never goes below 0
+          product.stock = Math.max(0, product.stock - orderedQty);
+          await product.save();
+        }
+      }
+    }
+
     const newOrder = new Order({
       userId: userId || null, 
       customerName,

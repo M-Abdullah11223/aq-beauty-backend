@@ -229,7 +229,7 @@ app.put('/api/products/:id/stock', verifyAdmin, async (req, res) => {
   }
 });
 
-// --- ORDER ROUTES ---
+/// --- ORDER ROUTES ---
 app.post('/api/orders', async (req, res) => {
   try {
     const { userId, customerName, email, phone, city, address, items, totalAmount, status, paymentMethod } = req.body;
@@ -238,7 +238,7 @@ app.post('/api/orders', async (req, res) => {
       return res.status(400).json({ message: 'Order must contain items' });
     }
 
-    // 🔥 AUTOMATIC STOCK DEDUCTION LOGIC
+    // 🔥 AUTOMATIC STOCK DEDUCTION LOGIC (FIXED)
     for (const item of items) {
       const prodId = item.productId || item._id;
       const orderedQty = Number(item.quantity) || 1;
@@ -246,9 +246,9 @@ app.post('/api/orders', async (req, res) => {
       if (prodId) {
         const product = await Product.findById(prodId);
         if (product) {
-          // Subtract stock, ensuring it never goes below 0
-          product.stock = Math.max(0, product.stock - orderedQty);
-          await product.save();
+          const newStock = Math.max(0, product.stock - orderedQty);
+          // Use findByIdAndUpdate to bypass the pre-save hook that causes the "next is not a function" error
+          await Product.findByIdAndUpdate(prodId, { stock: newStock });
         }
       }
     }

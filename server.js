@@ -344,13 +344,17 @@ app.post('/api/support', async (req, res) => {
     }
 
     
-    // 2. Configure Nodemailer Transporter
+   // 2. Configure Nodemailer Transporter
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // Use SSL
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
+      // 🔥 THE MAGIC FIX: Force Node.js to use IPv4 instead of IPv6
+      family: 4 
     });
 
     // 3. Email to AQ Beauty Admin

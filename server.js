@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const cloudinary = require('cloudinary').v2;
 const multer = require('multer');
+const nodemailer = require('nodemailer'); // 🔥 Added Nodemailer
 
 // Bring in the security lock
 const verifyAdmin = require('./middleware/adminAuth');
@@ -323,6 +324,82 @@ app.put('/api/orders/:id/status', verifyAdmin, async (req, res) => {
   } catch (err) {
     console.error('Error updating order status:', err);
     res.status(500).json({ error: 'Failed to update order status' });
+  }
+});
+
+// 🔥 POST: Support API (Task 5.1)
+app.post('/api/support', async (req, res) => {
+  try {
+    const { name, email, subject, message } = req.body;
+
+    // 1. Validate Input Server-Side
+    if (!name || !email || !subject || !message) {
+      return res.status(400).json({ error: 'Missing required fields: name, email, subject, and message are required.' });
+    }
+
+    // Basic email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Invalid email format.' });
+    }
+
+    // 2. Configure Nodemailer Transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT, 10) || 587,
+      secure: process.env.SMTP_PORT === '465', 
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+
+    // 3. Email to AQ Beauty Admin
+    const mailOptionsAdmin = {
+      from: `"${name}" <${process.env.SMTP_USER}>`,
+      replyTo: email,
+      to: process.env.SUPPORT_RECEIVER_EMAIL || 'orakzaiabdul70@gmail.com',
+      subject: `[Support Ticket] ${subject}`,
+      text: `Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+          <h2 style="color: #0f172a;">New Support Request</h2>
+          <hr style="border: 0; border-top: 1px solid #eee;" />
+          <p><strong>From:</strong> ${name} (&lt;${email}&gt;)</p>
+          <p><strong>Subject:</strong> ${subject}</p>
+          <div style="background-color: #f8fafc; padding: 15px; border-radius: 6px; border: 1px solid #e2e8f0;">
+            <p style="margin: 0; white-space: pre-wrap;">${message}</p>
+          </div>
+        </div>
+      `,
+    };
+
+    // 4. Send the email to the admin
+    await transporter.sendMail(mailOptionsAdmin);
+
+    // 5. Send an automated confirmation back to the customer
+    const mailOptionsCustomer = {
+      from: `"AQ Beauty Support" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: `Received: ${subject}`,
+      html: `
+        <div style="font-family: Arial, sans-serif; padding: 30px; max-width: 600px; margin: auto; border: 1px solid #e0e0e0; border-radius: 10px; background-color: #f4f9f8; text-align: center;">
+          <h2 style="color: #111; font-family: serif; font-size: 24px; margin-bottom: 10px;">AQ Beauty</h2>
+          <p style="color: #666; font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 30px;">Concierge Services</p>
+          <p style="color: #333; text-align: left; font-size: 15px; line-height: 1.6;">Dear ${name},</p>
+          <p style="color: #333; text-align: left; font-size: 15px; line-height: 1.6;">Thank you for reaching out to AQ Beauty. We have received your message regarding <strong>"${subject}"</strong>.</p>
+          <p style="color: #333; text-align: left; font-size: 15px; line-height: 1.6;">Our concierge team is reviewing your inquiry and will respond to this email within 24 hours.</p>
+          <p style="color: #333; text-align: left; font-size: 15px; line-height: 1.6; margin-top: 30px;">Warm regards,<br><strong>The AQ Beauty Team</strong></p>
+        </div>
+      `
+    };
+    await transporter.sendMail(mailOptionsCustomer);
+
+    res.status(200).json({ success: true, message: 'Support request submitted successfully.' });
+
+  } catch (error) {
+    console.error('Error handling support request:', error);
+    res.status(500).json({ success: false, error: 'An internal server error occurred while sending the message.' });
   }
 });
 

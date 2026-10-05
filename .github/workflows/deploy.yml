@@ -1,0 +1,51 @@
+name: Deploy Backend to EC2
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: SSH and Deploy to Server
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # 1. Navigate to the code directory and pull latest changes
+            cd ~/aq-beauty-backend
+            git pull origin main
+            
+            # 2. Rebuild the .env file dynamically using your GitHub Secrets
+            echo "NODE_ENV=production" > .env
+            echo "PORT=${{ secrets.PORT }}" >> .env
+            echo "MONGO_URI=${{ secrets.MONGO_URI }}" >> .env
+            echo "CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}" >> .env
+            echo "CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}" >> .env
+            echo "CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}" >> .env
+            echo "GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}" >> .env
+            echo "FRONTEND_URL=${{ secrets.FRONTEND_URL }}" >> .env
+            echo "JWT_SECRET=${{ secrets.JWT_SECRET }}" >> .env
+            echo "SMTP_HOST=${{ secrets.SMTP_HOST }}" >> .env
+            echo "SMTP_PORT=${{ secrets.SMTP_PORT }}" >> .env
+            echo "SMTP_USER=${{ secrets.SMTP_USER }}" >> .env
+            echo "SMTP_PASS=${{ secrets.SMTP_PASS }}" >> .env
+            echo "SUPPORT_RECEIVER_EMAIL=${{ secrets.SUPPORT_RECEIVER_EMAIL }}" >> .env
+            
+            # 3. Build the new Docker image
+            docker build -t aq-beauty-backend .
+            
+            # 4. Stop and remove the old container (if it exists)
+            docker stop aq-beauty-api || true
+            docker rm aq-beauty-api || true
+            
+            # 5. Start the new container
+            docker run -d --name aq-beauty-api --restart always -p 5001:5001 --env-file .env aq-beauty-backend

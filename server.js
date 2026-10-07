@@ -32,27 +32,31 @@ const app = express();
 // 🔥 Apply Helmet for standard HTTP security headers
 app.use(helmet());
 
-// 🔥 BULLETPROOF CORS configuration: Dynamically allows your Vercel frontend, custom domains, and local testing
+// 🔥 BULLETPROOF CORS configuration: Dynamically allows your Vercel frontend, nip.io, and local testing
 const allowedOrigins = [
   'http://localhost:3000',
   'https://aq-beauty-frontend.vercel.app',
+  'https://15.207.254.131.nip.io',
+  'http://15.207.254.131.nip.io',
   process.env.FRONTEND_URL,
   process.env.CORS_ORIGIN
 ].filter(Boolean); // Filters out undefined/null if env vars aren't set yet
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps, curl, or Postman)
+    // Allow requests with no origin (like mobile apps, curl, Postman, or same-origin)
     if (!origin) return callback(null, true);
     
     // Dynamically allow any vercel.app deployment URL or localhost
     if (
       allowedOrigins.indexOf(origin) !== -1 || 
       origin.endsWith('.vercel.app') || 
+      origin.endsWith('.nip.io') ||
       process.env.NODE_ENV !== 'production'
     ) {
       callback(null, true);
     } else {
+      console.log('CORS blocked request from origin:', origin); // Helps debugging future blocks
       callback(new Error('Not allowed by CORS policy'));
     }
   },
@@ -239,7 +243,7 @@ app.post('/api/orders', async (req, res) => {
       return res.status(400).json({ message: 'Order must contain items' });
     }
 
-    // 🔥 AUTOMATIC STOCK DEDUCTION LOGIC (FIXED)
+    // 🔥 AUTOMATIC STOCK DEDUCTION LOGIC
     for (const item of items) {
       const prodId = item.productId || item._id;
       const orderedQty = Number(item.quantity) || 1;
@@ -248,7 +252,7 @@ app.post('/api/orders', async (req, res) => {
         const product = await Product.findById(prodId);
         if (product) {
           const newStock = Math.max(0, product.stock - orderedQty);
-          // Use findByIdAndUpdate to bypass the pre-save hook that causes the "next is not a function" error
+          // Use findByIdAndUpdate to bypass pre-save hooks
           await Product.findByIdAndUpdate(prodId, { stock: newStock });
         }
       }
@@ -327,7 +331,7 @@ app.put('/api/orders/:id/status', verifyAdmin, async (req, res) => {
   }
 });
 
-// 🔥 POST: Support API (Task 5.1)
+// 🔥 POST: Support API
 app.post('/api/support', async (req, res) => {
   try {
     const { name, email, subject, message } = req.body;
@@ -343,7 +347,6 @@ app.post('/api/support', async (req, res) => {
       return res.status(400).json({ error: 'Invalid email format.' });
     }
 
-    
    // 2. Configure Nodemailer Transporter
     const transporter = nodemailer.createTransport({
       host: 'smtp.gmail.com',
@@ -353,7 +356,6 @@ app.post('/api/support', async (req, res) => {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
       },
-      // 🔥 THE MAGIC FIX: Force Node.js to use IPv4 instead of IPv6
       family: 4 
     });
 

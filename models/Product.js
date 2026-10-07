@@ -54,11 +54,15 @@ const productSchema = new mongoose.Schema({
 
 // Add a pre-save hook to ensure salePrice isn't higher than regular price
 productSchema.pre('save', function(next) {
-  if (this.salePrice && this.salePrice >= this.price) {
-    this.salePrice = null;
-    this.isSale = false;
+  try {
+    if (this.salePrice && this.salePrice >= this.price) {
+      this.salePrice = undefined; // Use undefined instead of null to prevent MongoDB cast errors
+      this.isSale = false;
+    }
+    next();
+  } catch (error) {
+    next(error);
   }
-  next();
 });
 
 // 2. Create and Export the Model
